@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DisasterAid infrastructure: a private OpenStack cloud on laptops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EDF1F5;--surface:#fff;--ink:#12202F;--muted:#55657A;--line:#C9D3DE;--accent:#0B6E99;--warn:#B4531A;--ok:#1E8A4C;--todo:#FFF1B8;--todoink:#5a4300;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1720;--surface:#16212D;--ink:#E6EDF4;--muted:#9AABBD;--line:#2A3947;--accent:#5CC0E8;--warn:#F0A36B;--ok:#5FD08A;--todo:#4a3d0a;--todoink:#ffe9a0}}
+:root[data-theme="dark"]{--bg:#0F1720;--surface:#16212D;--ink:#E6EDF4;--muted:#9AABBD;--line:#2A3947;--accent:#5CC0E8;--warn:#F0A36B;--ok:#5FD08A;--todo:#4a3d0a;--todoink:#ffe9a0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 "Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:860px;margin:0 auto;padding:48px 20px 72px}
+h1,h2,h3{font-family:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;line-height:1.15;margin:0}
+h1{font-size:clamp(2rem,5.5vw,3.2rem);font-weight:700;letter-spacing:-.02em;max-width:18em}
+h2{font-size:1.6rem;margin:56px 0 12px}
+h3{font-size:1.1rem;margin:0 0 4px}
+p{max-width:68ch;margin:0 0 14px}
+.lede{font-size:1.2rem;color:var(--muted);margin-top:16px}
+.facts{display:flex;flex-wrap:wrap;gap:8px 28px;margin:24px 0 0;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:var(--muted);font-size:.95rem}
+.facts b{color:var(--ink);font-weight:600}
+.scroll{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;margin:20px 0}
+svg{display:block;min-width:680px;width:100%;height:auto}
+svg text{fill:var(--ink);font:600 13px "Source Sans 3",system-ui,sans-serif}
+svg .m{fill:var(--muted);font-weight:400;font-size:12px}
+svg .box{fill:none;stroke:var(--ink);stroke-width:1.5}
+svg .net{stroke:var(--accent);stroke-width:2.5;fill:none;stroke-dasharray:10 8;animation:flow 1.6s linear infinite}
+svg .net2{stroke:var(--warn);stroke-width:2.5;fill:none;stroke-dasharray:6 6;animation:flow 2.2s linear infinite}
+svg .lbl{fill:var(--accent)}
+svg .pulse{fill:var(--ok);animation:pulse 2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes flow{to{stroke-dashoffset:-36}}
+@keyframes pulse{50%{opacity:.35;transform:scale(1.6)}}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:.95rem}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.issue{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:6px;padding:16px 20px;margin:14px 0}
+.issue p{margin:6px 0 0}
+.k{color:var(--muted);font-weight:600}
+.todo{background:var(--todo);color:var(--todoink);padding:1px 6px;border-radius:3px}
+ul{padding-left:1.2em;max-width:68ch}li{margin:6px 0}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible,.chip:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:20px;margin:20px 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.chip{font:600 .95rem "Source Sans 3",system-ui,sans-serif;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer;transition:all .25s}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--surface);transform:translateY(-3px)}
+.chip.done{border-color:var(--ok)}
+.go{font:600 1rem "Source Sans 3",system-ui,sans-serif;background:var(--ink);color:var(--surface);border:0;border-radius:6px;padding:10px 18px;cursor:pointer}
+#say{min-height:4.8em;margin:12px 0 0}
+.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;position:relative;margin:24px 0 8px}
+.pipe div{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px;font-size:.92rem;position:relative}
+.pipe b{display:block;font-family:"Bricolage Grotesque",system-ui,sans-serif}
+.track{position:relative;height:6px;background:var(--line);border-radius:3px;margin:0 0 6px}
+.track i{position:absolute;top:-5px;left:0;width:16px;height:16px;border-radius:50%;background:var(--accent);animation:ship 5s ease-in-out infinite}
+@keyframes ship{0%{left:0}85%,100%{left:calc(100% - 16px)}}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px;overflow-x:auto;font-size:.85rem;line-height:1.45;margin:14px 0}
+.log{list-style:none;padding:0;border-left:3px solid var(--accent);margin:20px 0}
+.log li{padding:2px 0 2px 16px}.log b{color:var(--accent)}
+@media (max-width:700px){.pipe{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:.95rem}
+</style>
+</head>
+<body>
+<main>
+<h1>A private OpenStack cloud for DisasterAid, built on laptops</h1>
+<p class="lede">DisasterAid is a disaster-response and volunteering platform built by Team ANEMOS at ESPRIT. This page is about the part nobody sees: the cloud we built from scratch to run it, what broke along the way, and what I would do differently.</p>
+<div class="facts">
+<span><b>Stack</b> OpenStack (Ubuntu 24.04, Flamingo), Heat, Kubernetes</span>
+<span><b>Automation</b> Ansible, GitLab CI</span>
+<span><b>Hardware</b> 7 laptops running VMs</span>
+<span><b>Team</b> Team ANEMOS, ESPRIT</span>
+</div>
+
+<h2>The big picture</h2>
+<p>One controller runs the OpenStack control plane. Compute nodes run the VMs. The VMs sit on a private network behind a virtual router and reach the outside world through floating IPs. The blue line below is the provider network, the orange one is the tenant network, and the green dots are services reporting healthy.</p>
+<div class="scroll" role="img" aria-label="Architecture diagram: one controller node, three compute nodes and a storage node, a provider network on top and a self-service network below.">
+<svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg">
+<line class="net" x1="20" y1="44" x2="740" y2="44"/>
+<text class="lbl" x="20" y="30">Provider network 192.168.1.0/24 (flat), floating IPs</text>
+<rect class="box" x="20" y="70" width="250" height="240" rx="6"/>
+<text x="36" y="94">Controller node</text><circle class="pulse" cx="250" cy="90" r="4"/>
+<text class="m" x="36" y="118">Keystone, Glance, Placement</text>
+<text class="m" x="36" y="138">Nova API, scheduler, conductor</text>
+<text class="m" x="36" y="158">Neutron server + OVS, DHCP,</text>
+<text class="m" x="36" y="174">L3 and metadata agents</text>
+<text class="m" x="36" y="194">Horizon, Heat, Cinder, Octavia</text>
+<text class="m" x="36" y="214">Swift proxy</text>
+<text class="m" x="36" y="238">MariaDB, RabbitMQ, Memcached,</text>
+<text class="m" x="36" y="254">etcd, chrony</text>
+<text class="m" x="36" y="284">Prometheus + Grafana</text>
+<rect class="box" x="296" y="70" width="140" height="110" rx="6"/>
+<text x="310" y="94">Compute 1</text><circle class="pulse" cx="418" cy="90" r="4"/><text class="m" x="310" y="116">nova-compute</text><text class="m" x="310" y="134">OVS agent</text>
+<rect class="box" x="450" y="70" width="140" height="110" rx="6"/>
+<text x="464" y="94">Compute 2</text><circle class="pulse" cx="572" cy="90" r="4" style="animation-delay:.6s"/><text class="m" x="464" y="116">nova-compute</text><text class="m" x="464" y="134">OVS agent</text>
+<rect class="box" x="604" y="70" width="136" height="110" rx="6"/>
+<text x="618" y="94">Compute 3</text><circle class="pulse" cx="722" cy="90" r="4" style="animation-delay:1.2s"/><text class="m" x="618" y="116">nova-compute</text><text class="m" x="618" y="134">OVS agent</text>
+<rect class="box" x="296" y="200" width="444" height="110" rx="6"/>
+<text x="310" y="224">Storage and remaining nodes</text>
+<text class="m" x="310" y="246">Swift object storage: 2 devices, 2 replicas</text>
+<text class="m" x="310" y="266">Cinder block volumes</text>
+<line class="net2" x1="20" y1="350" x2="740" y2="350"/>
+<text class="lbl" x="20" y="340" style="fill:var(--warn)">Self-service network 172.16.1.0/24, behind a virtual router</text>
+<text class="m" x="20" y="376">Instances: the Kubernetes nodes and application VMs</text>
+</svg>
+</div>
+
+<h2>Follow a VM launch</h2>
+<p>Ask OpenStack for a VM and about eight services cooperate to deliver it. Press play, or click a service to jump to its step.</p>
+<div class="stage">
+<button class="go" id="play" type="button">Play the launch</button>
+<div class="chips" id="chips" role="group" aria-label="Launch steps"></div>
+<p id="say" aria-live="polite">Press play to watch the request travel.</p>
+</div>
+
+<h2>From commit to running pods</h2>
+<p>Nothing was clicked together by hand more than once. A change moves through the same five stops every time.</p>
+<div class="track" aria-hidden="true"><i></i></div>
+<div class="pipe">
+<div><b>GitLab</b>Holds the code and runs the CI pipeline on every push.</div>
+<div><b>Ansible</b>Configures every node the same way, so rebuilds match.</div>
+<div><b>Heat</b>A stack template creates the cluster’s VMs, ports and security groups.</div>
+<div><b>Kubernetes</b>Runs the application containers across the cluster.</div>
+<div><b>DisasterAid</b>Angular, Spring Boot and PostgreSQL with PostGIS.</div>
+</div>
+<p>Why these tools together: Heat answers “what machines and networks exist”, Ansible answers “how is each machine configured”, and Kubernetes answers “what runs on them”. Keeping those questions in separate tools meant a broken laptop meant a rebuild, not a rescue.</p>
+
+<h2>Build log</h2>
+<p>The setup took roughly four weeks, from the dates in my notes.</p>
+<ul class="log">
+<li><b>3 Dec</b> MariaDB, RabbitMQ, Memcached, Keystone</li>
+<li><b>8 Dec</b> Glance running, first image uploaded; Nova databases and cells</li>
+<li><b>17 Dec</b> Compute nodes discovered; Neutron agents revived on Open vSwitch</li>
+<li><b>21 Dec</b> etcd and time sync across nodes</li>
+<li><b>23 Dec</b> Horizon, networks, router, first VM pinging the internet</li>
+<li><b>26 Dec</b> Cinder volumes and Swift rings</li>
+</ul>
+
+<h2>What runs on the controller</h2>
+<div class="scroll"><table>
+<tr><th>Service</th><th>What it does here</th></tr>
+<tr><td>Keystone, Glance, Placement</td><td>Identity, VM images (a CirrOS test image first), and resource tracking for scheduling.</td></tr>
+<tr><td>Nova</td><td>API, scheduler and conductor on the controller; compute nodes registered with cell discovery.</td></tr>
+<tr><td>Neutron</td><td>Open vSwitch networking with DHCP, L3 and metadata agents, security groups and floating IPs.</td></tr>
+<tr><td>Cinder, Swift</td><td>Block volumes, and object storage from hand-built rings (2 devices, 2 replicas).</td></tr>
+<tr><td>Heat, Octavia</td><td>Orchestration stacks and load balancing.</td></tr>
+<tr><td>Horizon</td><td>Web dashboard behind Apache.</td></tr>
+<tr><td>MariaDB, RabbitMQ, Memcached, etcd, chrony</td><td>Shared database, message bus, token cache, coordination and time sync.</td></tr>
+<tr><td>Prometheus, Grafana</td><td>Metrics collection and dashboards for the nodes and services.</td></tr>
+</table></div>
+
+<h2>What broke and how I fixed it</h2>
+<div class="issue"><h3>Neutron agents would not start</h3>
+<p><span class="k">Symptom:</span> the Linux bridge, DHCP and L3 agents failed while neutron-server was installed.</p>
+<p><span class="k">Cause:</span> the agent package version did not match neutron-server, a side effect of mixing package sources.</p>
+<p><span class="k">Fix:</span> I moved the data plane to Open vSwitch, started the missing neutron-rpc-server, and confirmed every agent was alive in <code>openstack network agent list</code>.</p></div>
+<div class="issue"><h3>Glance answered, but not for the client</h3>
+<p><span class="k">Symptom:</span> <code>openstack image list</code> failed while glance-api was running.</p>
+<p><span class="k">Debugging:</span> I took a token with <code>openstack token issue</code>, called the API with curl, checked the port with <code>ss</code>, and restarted glance-api and Apache after each config change.</p>
+<p><span class="k">Result:</span> after the database sync and a config correction, an image upload and list worked.</p></div>
+<div class="issue"><h3>Nova service creation and compute discovery</h3>
+<p><span class="k">Symptom:</span> the CLI rejected creating the compute service (HTTP 400), and new compute nodes did not appear.</p>
+<p><span class="k">Fix:</span> I created the service through the Python SDK, ran the cell and database syncs, then used cell discovery so each compute node registered as a hypervisor.</p></div>
+<div class="issue"><h3>Laptops on different networks</h3>
+<p><span class="k">Symptom:</span> the machines were not on one LAN while we built the cluster.</p>
+<p><span class="k">Fix:</span> I joined the nodes over a Tailscale VPN first, then moved MariaDB and etcd to LAN addresses once everyone shared a network, with chrony keeping time consistent.</p></div>
+
+<h2>The automation, reconstructed</h2>
+<p>I reset the environment after the project, so the original templates and playbooks are gone. The sketches below show how the automation was structured, rewritten from how these tools work. They are illustrative, not copies of the originals.</p>
+<h3>Heat: the cluster as one stack</h3>
+<pre>heat_template_version: 2021-04-16
+parameters:
+  key_name: {type: string}
+  network: {type: string}
+  image: {type: string, default: ubuntu-24.04}
+  flavor: {type: string, default: m1.medium}
+resources:
+  k8s_sg:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+        - {protocol: tcp, port_range_min: 22, port_range_max: 22}
+        - {protocol: tcp, port_range_min: 6443, port_range_max: 6443}
+  control_plane:
+    type: OS::Nova::Server
+    properties:
+      image: {get_param: image}
+      flavor: {get_param: flavor}
+      key_name: {get_param: key_name}
+      networks: [{network: {get_param: network}}]
+      security_groups: [{get_resource: k8s_sg}]
+  workers:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: 2
+      resource_def:
+        type: OS::Nova::Server
+        properties:
+          image: {get_param: image}
+          flavor: {get_param: flavor}
+          key_name: {get_param: key_name}
+          networks: [{network: {get_param: network}}]
+          security_groups: [{get_resource: k8s_sg}]</pre>
+<h3>Ansible: one playbook, three roles of machine</h3>
+<pre>- hosts: k8s
+  become: true
+  roles:
+    - common      # chrony, swap off, kernel modules, sysctl
+    - containerd  # SystemdCgroup = true
+    - kubernetes  # kubeadm, kubelet, kubectl at a pinned version
+- hosts: control_plane
+  roles: [kubeadm_init, cni]
+- hosts: workers
+  roles: [kubeadm_join]</pre>
+<h3>GitLab CI: lint first, deploy on demand</h3>
+<pre>stages: [lint, deploy]
+lint:
+  stage: lint
+  script: [yamllint ., ansible-lint]
+deploy:
+  stage: deploy
+  when: manual
+  script:
+    - openstack stack create -t cluster.yaml --wait k8s
+    - ansible-playbook -i inventory site.yml</pre>
+<p>Credentials live in GitLab CI variables, never in the repository.</p>
+<h3>Where this stack tends to fail, and how I check</h3>
+<p>These are the known trouble spots for this combination of tools, and what I would look at first.</p>
+<ul>
+<li><b>A Heat stack ends in CREATE_FAILED.</b> Usually a flavor too big for a laptop, a missing image or no free floating IPs. <code>openstack stack failure list</code> names the failing resource.</li>
+<li><b>Kubernetes nodes stay NotReady.</b> Typical causes are swap still on, a container runtime cgroup driver that differs from the kubelet’s, or no CNI installed. <code>kubectl describe node</code> and <code>journalctl -u kubelet</code> show which.</li>
+<li><b>A node cannot join.</b> The join token expires after 24 hours, and clock drift between nodes breaks certificates, which is why chrony runs everywhere.</li>
+<li><b>Pods cannot talk across VMs.</b> The tenant network MTU here is 1450 because of the overlay, so a CNI that wraps packets again needs a lower MTU.</li>
+<li><b>Ansible changes things on every run.</b> Raw shell tasks are not idempotent, so I use modules and <code>changed_when</code>, and a second run should report zero changes.</li>
+<li><b>The CI runner cannot reach the nodes.</b> Check the security group for port 22 and that the runner sits on a network that can route to the floating IPs.</li>
+</ul>
+
+<h2>Limits, and what I would change</h2>
+<ul>
+<li><b>One controller is a single point of failure.</b> I would run three controllers with a Galera database cluster, clustered RabbitMQ and a virtual IP.</li>
+<li><b>Swift has two devices on one host.</b> Replication survives a disk failing, not a machine. A production ring needs several nodes.</li>
+<li><b>Internal endpoints use plain HTTP.</b> I would add TLS and move credentials into a secrets store, with GitLab CI variables for pipeline secrets.</li>
+<li><b>Provisioning is only partly declarative.</b> The control plane was installed by hand. I would capture it in Ansible roles so a rebuild is one command.</li>
+</ul>
+
+<footer>
+Team ANEMOS, ESPRIT, Tunis. Written by <a href="https://www.linkedin.com/in/yassin-jaouani-bb0404280">Yassin Jaouani</a> · <a href="https://github.com/yassin-esprit">GitHub</a>
+</footer>
+</main>
+<script>
+(function(){
+var steps=[
+["Horizon or CLI","You press Launch. The dashboard sends your request to the API, carrying your login token."],
+["Keystone","Checks who you are and whether you may create servers in this project, then vouches for the request."],
+["Nova API","Accepts the request and records a new server in the database. Nothing exists yet."],
+["Scheduler + Placement","The scheduler asks Placement which compute nodes have enough CPU and RAM, and picks one."],
+["Glance","The chosen compute node downloads the VM image from Glance."],
+["Neutron","Creates a network port and wires it into Open vSwitch. DHCP hands the VM an address."],
+["nova-compute","Starts the VM on the chosen laptop. Status flips from BUILD to ACTIVE."],
+["Floating IP","Attach a floating IP and the VM is reachable from the provider network."]];
+var chips=document.getElementById("chips"),say=document.getElementById("say"),btn=document.getElementById("play"),t=null,cur=-1;
+function show(i){cur=i;[].forEach.call(chips.children,function(c,j){c.className="chip"+(j===i?" on":j<i?" done":"")});say.textContent=steps[i][1]}
+steps.forEach(function(s,i){var c=document.createElement("button");c.type="button";c.className="chip";c.textContent=s[0];c.onclick=function(){clearInterval(t);show(i)};chips.appendChild(c)});
+btn.onclick=function(){clearInterval(t);var i=0;show(0);t=setInterval(function(){i++;if(i>=steps.length){clearInterval(t);btn.textContent="Replay";return}show(i)},2200);btn.textContent="Replay"};
+})();
+</script>
+</body>
+</html>
